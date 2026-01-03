@@ -24,22 +24,39 @@ export interface User {
   password_hash?: string;
   avatar?: string;
   created_at: string;
+  
+  // Professional Context
+  company: string;
+  manager: string;
+  location: string;
+  joining_date: string;
+  
+  // Private Info
+  dob: string;
+  nationality: string;
+  personal_email: string;
+  gender: string;
+  marital_status: string;
+  
+  // Bank Details
+  bank_account_no: string;
+  bank_name: string;
+  ifsc_code: string;
+  pan_number: string;
+  resume_url?: string;
 }
 
 export interface Salary {
   id: string;
   user_id: string;
-  wage: number;
-  basic: number;
-  hra: number;
-  allowance: number;
-  lta: number;
-  pf: number;
-  professional_tax: number;
-  net_salary: number;
+  monthly_wage: number;
+  working_days_week: number;
+  working_hours: number;
+  break_time: string;
   updated_at: string;
 }
 
+// Added Attendance interface to fix import errors in TopBar.tsx, attendanceService.ts and AttendancePage.tsx
 export interface Attendance {
   id: string;
   user_id: string;
@@ -50,6 +67,7 @@ export interface Attendance {
   status: AttendanceStatus;
 }
 
+// Added LeaveRequest interface to fix import error in TimeOffPage.tsx
 export interface LeaveRequest {
   id: string;
   user_id: string;
@@ -58,7 +76,6 @@ export interface LeaveRequest {
   start_date: string;
   end_date: string;
   remarks: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  admin_comment?: string;
+  status: 'Approved' | 'Rejected' | 'Pending';
   attachment_name?: string;
 }

@@ -1,4 +1,7 @@
-
+Team Members:
+1. Snigdha (Leader)
+2. Piyush 
+3. Priyanshu
 
 **Prerequisites:**  Node.js
 

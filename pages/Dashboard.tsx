@@ -140,7 +140,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   type="text" 
                   placeholder="Search name or Employee ID..." 
                   value={search}
-                  onChange={(e) => setSearch(setSearch(e.target.value))}
+                  // Fix: Corrected double-nested setSearch call
+                  onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-12 pr-6 py-3.5 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-black focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all shadow-sm"
                 />
               </div>
