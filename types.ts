@@ -7,6 +7,7 @@ export enum UserRole {
 export enum AttendanceStatus {
   PRESENT = 'Present',
   ABSENT = 'Absent',
+  HALF_DAY = 'Half-day',
   LEAVE = 'Leave'
 }
 
@@ -16,6 +17,7 @@ export interface User {
   name: string;
   email: string;
   mobile: string;
+  address?: string;
   department: string;
   job_title: string;
   role: UserRole;
@@ -52,9 +54,11 @@ export interface LeaveRequest {
   id: string;
   user_id: string;
   user_name: string;
-  type: 'Paid Time Off' | 'Sick Leave' | 'Unpaid Leave';
+  type: 'Paid' | 'Sick' | 'Unpaid';
   start_date: string;
   end_date: string;
+  remarks: string;
   status: 'Pending' | 'Approved' | 'Rejected';
-  allocation?: number;
+  admin_comment?: string;
+  attachment_name?: string;
 }

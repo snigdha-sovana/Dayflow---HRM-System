@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { User, UserRole, AttendanceStatus } from '../types';
+import React, { useState, useEffect } from 'react';
+import { User, UserRole, AttendanceStatus, Attendance } from '../types';
 import { Link, NavLink } from 'react-router-dom';
 import { attendanceService } from '../services/attendanceService';
 
@@ -11,36 +11,50 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ user, onLogout }) => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState<AttendanceStatus | null>(null);
+  const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const navItems = [
     { name: 'Dashboard', path: '/' },
     { name: 'Employees', path: '/', hidden: user.role !== UserRole.ADMIN },
     { name: 'Attendance', path: '/attendance' },
     { name: 'Time Off', path: '/time-off' },
-    { name: 'Salary', path: '/salary', hidden: user.role !== UserRole.ADMIN },
+    // Salary removed from here as requested
   ];
 
-  const handleStatusChange = async (status: AttendanceStatus) => {
-    if (status === AttendanceStatus.PRESENT) {
-      await attendanceService.checkIn(user.id);
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      const record = await attendanceService.getTodayAttendance(user.id);
+      setTodayAttendance(record);
+    };
+    fetchAttendance();
+  }, [user.id]);
+
+  const handleCheckIn = async () => {
+    setIsProcessing(true);
+    try {
+      const record = await attendanceService.checkIn(user.id);
+      setTodayAttendance(record);
+    } catch (error) {
+      alert("Check-in failed");
+    } finally {
+      setIsProcessing(false);
     }
-    // In a real app, we'd handle ABSENT/LEAVE status updates via service
-    setCurrentStatus(status);
-    setShowAttendanceDropdown(false);
   };
 
-  const getStatusDisplay = () => {
-    switch(currentStatus) {
-      case AttendanceStatus.PRESENT: return { label: 'Present', icon: '🟢' };
-      case AttendanceStatus.ABSENT: return { label: 'Absent', icon: '🟡' };
-      case AttendanceStatus.LEAVE: return { label: 'Leave', icon: '✈️' };
-      default: return { label: 'Status', icon: '📅' };
+  const handleCheckOut = async () => {
+    setIsProcessing(true);
+    try {
+      const record = await attendanceService.checkOut(user.id);
+      setTodayAttendance(record);
+    } catch (error) {
+      alert("Check-out failed. Ensure you have checked in first.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const statusInfo = getStatusDisplay();
+  const isCheckedIn = !!todayAttendance?.check_in && !todayAttendance?.check_out;
 
   return (
     <header className="h-20 bg-white border-b border-gray-200 px-6 md:px-12 flex items-center justify-between sticky top-0 z-40 shadow-sm">
@@ -67,53 +81,37 @@ const TopBar: React.FC<TopBarProps> = ({ user, onLogout }) => {
               {item.name}
             </NavLink>
           ))}
+          
+          <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
+          {/* New Check-in / Check-out Options in Nav Bar */}
+          <div className="flex items-center gap-2">
+            {!todayAttendance?.check_in ? (
+              <button
+                onClick={handleCheckIn}
+                disabled={isProcessing}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-green-100 disabled:opacity-50"
+              >
+                {isProcessing ? '...' : 'Check In'}
+              </button>
+            ) : !todayAttendance?.check_out ? (
+              <button
+                onClick={handleCheckOut}
+                disabled={isProcessing}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-red-100 disabled:opacity-50"
+              >
+                {isProcessing ? '...' : 'Check Out'}
+              </button>
+            ) : (
+              <div className="px-4 py-2 bg-gray-100 text-gray-400 text-xs font-black uppercase tracking-widest rounded-xl">
+                Done for Today
+              </div>
+            )}
+          </div>
         </nav>
       </div>
 
       <div className="flex items-center gap-3 md:gap-6">
-        {/* Attendance Dropdown */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowAttendanceDropdown(!showAttendanceDropdown)}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all"
-          >
-            <span className="text-lg leading-none">{statusInfo.icon}</span>
-            <span className="text-sm font-bold text-gray-700 hidden sm:block">{statusInfo.label}</span>
-            <i className="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
-          </button>
-
-          {showAttendanceDropdown && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowAttendanceDropdown(false)}></div>
-              <div className="absolute right-0 mt-3 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                <button 
-                  onClick={() => handleStatusChange(AttendanceStatus.PRESENT)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-green-50 transition-colors text-left"
-                >
-                  <span className="text-lg">🟢</span>
-                  <span className="font-semibold">Present</span>
-                </button>
-                <button 
-                  onClick={() => handleStatusChange(AttendanceStatus.ABSENT)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-yellow-50 transition-colors text-left"
-                >
-                  <span className="text-lg">🟡</span>
-                  <span className="font-semibold">Absent</span>
-                </button>
-                <button 
-                  onClick={() => handleStatusChange(AttendanceStatus.LEAVE)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors text-left"
-                >
-                  <span className="text-lg">✈️</span>
-                  <span className="font-semibold">Leave</span>
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
-
         <div className="relative">
           <button 
             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -123,11 +121,15 @@ const TopBar: React.FC<TopBarProps> = ({ user, onLogout }) => {
               <p className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors leading-tight">{user.name}</p>
               <p className="text-[10px] text-gray-400 capitalize font-bold tracking-widest">{user.role}</p>
             </div>
-            <img 
-              src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} 
-              alt="Avatar" 
-              className="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-indigo-100 transition-all shadow-sm"
-            />
+            <div className="relative">
+              <img 
+                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} 
+                alt="Avatar" 
+                className="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-indigo-100 transition-all shadow-sm"
+              />
+              {/* Status Symbol on Profile Icon */}
+              <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 border-2 border-white rounded-full shadow-sm ${isCheckedIn ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+            </div>
           </button>
 
           {showProfileDropdown && (
@@ -142,10 +144,16 @@ const TopBar: React.FC<TopBarProps> = ({ user, onLogout }) => {
                   <i className="fa-solid fa-user text-gray-400 w-5"></i>
                   My Profile
                 </Link>
-                <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left">
-                  <i className="fa-solid fa-gear text-gray-400 w-5"></i>
-                  Settings
-                </button>
+                {user.role === UserRole.ADMIN && (
+                   <Link 
+                    to="/salary"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    onClick={() => setShowProfileDropdown(false)}
+                  >
+                    <i className="fa-solid fa-money-bill-transfer text-gray-400 w-5"></i>
+                    Payroll Management
+                  </Link>
+                )}
                 <div className="h-px bg-gray-100 my-2"></div>
                 <button 
                   onClick={() => {
