@@ -1,0 +1,7 @@
+{
+  "name": "HRMaster - Enterprise HRMS",
+  "description": "A production-ready Human Resource Management System with features for employee management, payroll, attendance tracking, and leave approvals.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
